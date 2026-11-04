@@ -1,0 +1,31 @@
+curl -u elastic:appsecret -X POST "http://localhost:9200/books/_doc" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Введение в Docker",
+    "author": "Иван Иванов",
+    "description": "Книга о контейнеризации, Docker и оркестрации.",
+    "year": 2023
+  }'
+
+curl -u elastic:appsecret -X POST "http://localhost:9200/books/_doc" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Elasticsearch для разработчиков",
+    "author": "Мария Петрова",
+    "description": "Полнотекстовый поиск, аналитика и масштабирование.",
+    "year": 2022
+  }'
+
+curl -u elastic:appsecret -X GET "http://localhost:9200/books/_search?pretty" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": {
+      "multi_match": {
+        "query": "поиск и контейнеризация",
+        "fields": ["title", "description"]
+      }
+    },
+    "sort": [
+      { "_score": { "order": "desc" } }
+    ]
+  }'

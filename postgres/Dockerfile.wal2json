@@ -1,0 +1,17 @@
+FROM postgres:16-alpine AS builder
+
+# Компиляторы нужны только на промежуточном этапе сборки.
+RUN apk add --no-cache --virtual .build-deps \
+      build-base git clang llvm postgresql16-dev
+
+ARG WAL2JSON_REF=wal2json_2_6
+# Собрать output plugin PostgreSQL без LLVM bitcode.
+RUN git clone --depth 1 --branch "${WAL2JSON_REF}" \
+      https://github.com/eulerto/wal2json.git /tmp/wal2json \
+    && make -C /tmp/wal2json with_llvm=no \
+    && make -C /tmp/wal2json with_llvm=no install
+
+FROM postgres:16-alpine
+# В конечный образ попадёт только готовая библиотека, без компиляторов.
+COPY --from=builder /usr/local/lib/postgresql/wal2json.so /usr/local/lib/postgresql/wal2json.so
+

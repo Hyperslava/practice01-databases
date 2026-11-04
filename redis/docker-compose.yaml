@@ -1,0 +1,67 @@
+# Файл: redis/docker-compose.yml
+# Описание: Развертывание Redis с веб-интерфейсом Redis Commander
+
+version: "3.9"
+
+services:
+  # === Сервис 1: Redis-сервер ===
+  redis:
+    # Образ Redis из Docker Hub. Тег "7-alpine":
+    #   7       — мажорная версия Redis
+    #   alpine  — легковесный образ (~5 MB)
+    image: redis:7-alpine
+
+    container_name: practice01-redis
+    restart: unless-stopped
+
+    # Проброс портов
+    ports:
+      - "6379:6379"
+
+    # Тома для хранения данных
+    volumes:
+      - redis_data:/data
+
+    # Команда запуска Redis
+    # command: >
+    #   redis-server
+    #   --requirepass mypassword
+    #   --maxmemory 256mb
+    #   --maxmemory-policy allkeys-lru
+    # command: redis-server --requirepass mystrongredis --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --requirepass mystrongredis --maxmemory 256mb --maxmemory-policy noeviction
+
+
+    # Проверка здоровья
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "mystrongredis", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # === Сервис 2: Redis Commander (веб-интерфейс) ===
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: practice01-redis-commander
+    restart: unless-stopped
+
+    # environment:
+    #   # Хост Redis-сервера
+    #   REDIS_HOSTS: local:redis:6379:0:mypassword
+
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:mystrongredis
+
+    # Веб-интерфейс на http://localhost:8081
+    ports:
+      - "8081:8081"
+
+    # Запускать только после того, как Redis станет healthy
+    depends_on:
+      redis:
+        condition: service_healthy
+
+# Определение именованных томов
+volumes:
+  redis_data:
+    driver: local

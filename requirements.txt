@@ -1,0 +1,7 @@
+# Зависимости для uni_python_fixed_2.py и seed_all_storages.py.
+psycopg[binary]>=3.1
+redis>=5.0
+pymongo>=4.6
+neo4j>=5.0
+# Сервер Elasticsearch использует API совместимости версии 8.
+elasticsearch>=8.0,<9.0

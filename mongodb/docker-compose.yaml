@@ -1,0 +1,72 @@
+# Файл: mongodb/docker-compose.yml
+# Описание: Развертывание MongoDB с веб-интерфейсом Mongo Express
+
+version: "3.9"
+
+services:
+  # === Сервис 1: MongoDB-сервер ===
+  mongodb:
+    # Образ MongoDB версии 7
+    image: mongo:7
+    container_name: practice01-mongodb
+    restart: unless-stopped
+
+    # Переменные окружения для инициализации MongoDB
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: admin
+    #   MONGO_INITDB_ROOT_PASSWORD: secret
+    #   MONGO_INITDB_DATABASE: practice_db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: appuser
+      MONGO_INITDB_ROOT_PASSWORD: appsecret
+      MONGO_INITDB_DATABASE: practice_db
+
+    # Проброс порта
+    ports:
+      - "27017:27017"
+
+    # Том для хранения данных
+    volumes:
+      - mongodb_data:/data/db
+
+    # Ограничение кеша WiredTiger
+    command: mongod --wiredTigerCacheSizeGB 0.5
+
+    # Проверка здоровья
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')",
+       "-u", "appuser", "-p", "appsecret",
+       "--authenticationDatabase", "admin", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === Сервис 2: Mongo Express (веб-интерфейс) ===
+  mongo-express:
+    image: mongo-express:1-20-alpine3.19
+    container_name: practice01-mongo-express
+    restart: unless-stopped
+
+    environment:
+      # ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      # ME_CONFIG_MONGODB_ADMINPASSWORD: secret
+      # ME_CONFIG_MONGODB_URL: mongodb://admin:secret@mongodb:27017/
+      ME_CONFIG_MONGODB_ADMINUSERNAME: appuser
+      ME_CONFIG_MONGODB_ADMINPASSWORD: appsecret
+      ME_CONFIG_MONGODB_URL: mongodb://appuser:appsecret@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+
+    # Веб-интерфейс доступен на http://localhost:8082
+    ports:
+      - "8082:8081"
+
+    # Запускать только после готовности MongoDB
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+# Определение именованных томов
+volumes:
+  mongodb_data:
+    driver: local

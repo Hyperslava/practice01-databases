@@ -1,0 +1,5 @@
+FROM python:3.12-slim
+# Обработчик читает события Kafka и удаляет соответствующие ключи Redis.
+RUN pip install --no-cache-dir 'confluent-kafka>=2,<3' 'redis>=5,<7'
+COPY redis_delete_worker.py /app/redis_delete_worker.py
+CMD ["python", "-u", "/app/redis_delete_worker.py"]

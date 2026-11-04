@@ -1,0 +1,212 @@
+# Файл: all-in-one/docker-compose.yml
+# Описание: Все 5 СУБД в одном файле
+
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: practice01-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    # command: redis-server --requirepass mypassword --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --requirepass mystrongredis --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "mystrongredis", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: practice01-redis-commander
+    restart: unless-stopped
+    # environment:
+    #   - REDIS_HOSTS=local:redis:6379:0:mypassword
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:mystrongredis
+    ports:
+      - "8081:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+
+  mongodb:
+      image: mongo:7
+      container_name: practice01-mongodb
+      restart: unless-stopped
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: appuser
+        MONGO_INITDB_ROOT_PASSWORD: appsecret
+        MONGO_INITDB_DATABASE: practice_db
+      ports:
+        - "27017:27017"
+      volumes:
+        - mongodb_data:/data/db
+      command: mongod --wiredTigerCacheSizeGB 0.5
+
+      healthcheck:
+        test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')",
+        "-u", "appuser", "-p", "appsecret",
+        "--authenticationDatabase", "admin", "--quiet"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+
+  mongo-express:
+    image: mongo-express:1-20-alpine3.19
+    container_name: practice01-mongo-express
+    restart: unless-stopped
+
+    environment:
+      # ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      # ME_CONFIG_MONGODB_ADMINPASSWORD: secret
+      # ME_CONFIG_MONGODB_URL: mongodb://admin:secret@mongodb:27017/
+      ME_CONFIG_MONGODB_ADMINUSERNAME: appuser
+      ME_CONFIG_MONGODB_ADMINPASSWORD: appsecret
+      ME_CONFIG_MONGODB_URL: mongodb://appuser:appsecret@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+
+    ports:
+      - "8082:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+  neo4j:
+    image: neo4j:5-community
+    container_name: practice01-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/neo4jsecret
+
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # --- Elasticsearch ---
+  elasticsearch:
+    image: elasticsearch:8.16.0
+    container_name: practice01-elasticsearch
+    restart: unless-stopped
+    environment:
+      - node.name=es-node-1
+      - cluster.name=practice-cluster
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.ml.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: kibana:8.16.0
+    container_name: practice01-kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+  postgres:
+    build:
+      context: ../postgres
+      dockerfile: Dockerfile.wal2json
+    image: practice01-postgres:16-wal2json
+    container_name: practice01-postgres
+    restart: unless-stopped
+
+    environment:
+      # Имя суперпользователя
+      POSTGRES_USER: admin
+      # Пароль суперпользователя
+      POSTGRES_PASSWORD: secret
+      # Имя создаваемой базы данных
+      POSTGRES_DB: practice_db
+      # Кодировка и локаль
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      # Директория данных
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    ports:
+      # Порт PostgreSQL
+      - "5433:5432"
+
+    volumes:
+      # Данные PostgreSQL
+      - postgres_data:/var/lib/postgresql/data
+      # Конфигурация PostgreSQL хранится в проекте
+      - ../postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      # Скрипты инициализации (раскомментировать при необходимости)
+      # - ./init-scripts:/docker-entrypoint-initdb.d
+
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d practice_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: practice01-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8083:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  redis_data:
+  mongodb_data:
+  neo4j_data:
+  neo4j_logs:
+  es_data:
+  postgres_data:
+  pgadmin_data:

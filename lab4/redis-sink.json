@@ -1,0 +1,23 @@
+{
+  "name": "lab4-redis-students",
+  "config": {
+    "connector.class": "io.lenses.streamreactor.connect.redis.sink.RedisSinkConnector",
+    "tasks.max": "1",
+    "topics": "university.public.students",
+    "connect.redis.host": "host.docker.internal",
+    "connect.redis.port": "6379",
+    "connect.redis.password": "mystrongredis",
+    "connect.redis.kcql": "SELECT * FROM university.public.students PK id",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "transforms": "extractAfter,dropTombstone",
+    "transforms.extractAfter.type": "org.apache.kafka.connect.transforms.ExtractField$Value",
+    "transforms.extractAfter.field": "after",
+    "transforms.dropTombstone.type": "org.apache.kafka.connect.transforms.Filter",
+    "transforms.dropTombstone.predicate": "isTombstone",
+    "predicates": "isTombstone",
+    "predicates.isTombstone.type": "org.apache.kafka.connect.transforms.predicates.RecordIsTombstone"
+  }
+}

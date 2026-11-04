@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  neo4j:
+    # Образ Neo4j Community Edition версии 5
+    image: neo4j:5-community
+    container_name: practice01-neo4j
+    restart: unless-stopped
+
+    # Проброс портов:
+    ports:
+      # 7474 — HTTP-порт веб-интерфейса Neo4j Browser
+      - "7474:7474"
+      # 7687 — порт протокола Bolt
+      - "7687:7687"
+
+    environment:
+      # Начальный пароль для пользователя neo4j
+      # Логин: neo4j
+      NEO4J_AUTH: neo4j/neo4jsecret
+
+      # Настройки памяти JVM
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+
+      # Размер page cache — кеш данных графа
+      NEO4J_server_memory_pagecache_size: 256m
+
+      # Разрешить процедуры APOC
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
+
+    volumes:
+      # Данные графа
+      - neo4j_data:/data
+      # Логи Neo4j
+      - neo4j_logs:/logs
+      # Плагины (например, APOC)
+      - neo4j_plugins:/plugins
+
+    healthcheck:
+      # Проверка через HTTP-порт Neo4j Browser
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  neo4j_plugins:
+    driver: local

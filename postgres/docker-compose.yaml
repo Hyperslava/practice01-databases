@@ -1,0 +1,75 @@
+# Файл: postgresql/docker-compose.yml
+# Описание: Развертывание PostgreSQL + pgAdmin 4
+
+version: "3.9"
+
+services:
+  # === Сервис 1: PostgreSQL ===
+  postgres:
+    image: postgres:16-alpine
+    container_name: practice01-postgres
+    restart: unless-stopped
+
+    environment:
+      # Имя суперпользователя
+      POSTGRES_USER: admin
+      # Пароль суперпользователя
+      POSTGRES_PASSWORD: secret
+      # Имя создаваемой базы данных
+      POSTGRES_DB: practice_db
+      # Кодировка и локаль
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      # Директория данных
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    ports:
+      # Порт PostgreSQL
+      - "5433:5432"
+
+    volumes:
+      # Данные PostgreSQL
+      - postgres_data:/var/lib/postgresql/data
+      # Скрипты инициализации (раскомментировать при необходимости)
+      # - ./init-scripts:/docker-entrypoint-initdb.d
+
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c max_connections=100
+      -c log_statement=all
+      -c log_destination=stderr
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d practice_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === Сервис 2: pgAdmin 4 ===
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: practice01-pgadmin
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
+
+    ports:
+      # Веб-интерфейс pgAdmin
+      - "8083:80"
+
+    volumes:
+      # Данные pgAdmin (сохранённые подключения)
+      - pgadmin_data:/var/lib/pgadmin
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local

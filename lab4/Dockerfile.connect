@@ -1,0 +1,11 @@
+FROM confluentinc/cp-kafka-connect:7.6.1
+
+# Debezium 1.9 поддерживает установленный в PostgreSQL wal2json.
+ARG DEBEZIUM_VERSION=1.9.7.Final
+RUN mkdir -p /usr/share/confluent-hub-components/debezium-postgres \
+ && curl -fsSL "https://repo.maven.apache.org/maven2/io/debezium/debezium-connector-postgres/${DEBEZIUM_VERSION}/debezium-connector-postgres-${DEBEZIUM_VERSION}-plugin.tar.gz" \
+    | tar -xz -C /usr/share/confluent-hub-components/debezium-postgres \
+ && confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:latest
+
+# setup-redis.sh скачивает JAR Redis до пересборки этого образа.
+COPY plugins/redis/ /usr/share/confluent-hub-components/redis/

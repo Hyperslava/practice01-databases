@@ -1,0 +1,79 @@
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: gateway_api/Dockerfile
+    environment:
+      LAB1_SERVICE_URL: http://lab1-service:8000
+      LAB2_SERVICE_URL: http://lab2-service:8000
+      LAB3_SERVICE_URL: http://lab3-service:8000
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      GATEWAY_SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:-lab1-internal-token}
+      DEMO_USERNAME: ${DEMO_USERNAME:-teacher}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-teacher-secret}
+    ports:
+      - "${GATEWAY_PORT:-8088}:8000"
+    depends_on:
+      lab1-service:
+        condition: service_started
+      lab2-service:
+        condition: service_started
+      lab3-service:
+        condition: service_started
+
+  lab1-service:
+    build:
+      context: .
+      dockerfile: lab1_api/Dockerfile
+      args:
+        APP_MODULE: lab1_app:app
+    environment:
+      PG_HOST: ${PG_HOST:-host.docker.internal}
+      PG_PORT: ${PG_PORT:-5433}
+      PG_DATABASE: ${PG_DATABASE:-university_system}
+      PG_USER: ${PG_USER:-admin}
+      PG_PASSWORD: ${PG_PASSWORD:-secret}
+      REDIS_HOST: ${REDIS_HOST:-host.docker.internal}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-mystrongredis}
+      ES_URL: ${ES_URL:-http://host.docker.internal:9200}
+      NEO4J_URI: ${NEO4J_URI:-bolt://host.docker.internal:7687}
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4jsecret}
+      GATEWAY_SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:-lab1-internal-token}
+    volumes:
+      - ./Logs:/app/logs
+
+  lab2-service:
+    build:
+      context: .
+      dockerfile: lab2_api/Dockerfile
+    environment:
+      PG_HOST: ${PG_HOST:-host.docker.internal}
+      PG_PORT: ${PG_PORT:-5433}
+      PG_DATABASE: ${PG_DATABASE:-university_system}
+      PG_USER: ${PG_USER:-admin}
+      PG_PASSWORD: ${PG_PASSWORD:-secret}
+      NEO4J_URI: ${NEO4J_URI:-bolt://host.docker.internal:7687}
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4jsecret}
+      GATEWAY_SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:-lab1-internal-token}
+    volumes:
+      - ./Logs:/app/logs
+
+  lab3-service:
+    build:
+      context: .
+      dockerfile: lab3_api/Dockerfile
+    environment:
+      REDIS_HOST: ${REDIS_HOST:-host.docker.internal}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-mystrongredis}
+      MONGO_URI: ${MONGO_URI:-mongodb://appuser:appsecret@host.docker.internal:27017/}
+      MONGO_DB: ${MONGO_DB:-university_system}
+      NEO4J_URI: ${NEO4J_URI:-bolt://host.docker.internal:7687}
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4jsecret}
+      GATEWAY_SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:-lab1-internal-token}
+    volumes:
+      - ./Logs:/app/logs

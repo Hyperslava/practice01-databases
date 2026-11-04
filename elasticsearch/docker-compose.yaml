@@ -1,0 +1,89 @@
+# Файл: elasticsearch/docker-compose.yml
+# Описание: Развертывание Elasticsearch + Kibana
+
+version: "3.9"
+
+services:
+  # === Сервис 1: Elasticsearch ===
+  elasticsearch:
+    # Образ Elasticsearch версии 8
+    image: elasticsearch:8.16.0
+    container_name: practice01-elasticsearch
+    restart: unless-stopped
+
+    environment:
+      # Имя узла
+      - node.name=es-node-1
+
+      # Имя кластера
+      - cluster.name=practice-cluster
+
+      # Режим одного узла
+      - discovery.type=single-node
+
+      # Отключаем SSL/TLS (учебный режим)
+      - xpack.security.enabled=false
+
+      # Отключаем enrollment token
+      - xpack.security.enrollment.enabled=false
+
+      # Ограничение Java heap
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+
+      # Отключаем Machine Learning
+      - xpack.ml.enabled=false
+
+    ports:
+      # 9200 — HTTP REST API
+      - "9200:9200"
+      # 9300 — межузловое взаимодействие
+      - "9300:9300"
+
+    volumes:
+      # Данные индексов
+      - es_data:/usr/share/elasticsearch/data
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+    # Увеличиваем лимит mmap
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # === Сервис 2: Kibana ===
+  kibana:
+    # Веб-интерфейс Kibana
+    image: kibana:8.16.0
+    container_name: practice01-kibana
+    restart: unless-stopped
+
+    environment:
+      # Kibana подключается к Elasticsearch по имени сервиса
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+
+    ports:
+      # Веб-интерфейс Kibana
+      - "5601:5601"
+
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+volumes:
+  es_data:
+    driver: local

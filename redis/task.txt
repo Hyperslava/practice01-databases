@@ -1,0 +1,5 @@
+docker exec -it practice01-redis redis-cli -a mystrongredis
+INCR visits
+GET visits
+EXPIRE visits 10
+TTL visits

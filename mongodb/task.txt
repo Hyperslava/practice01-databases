@@ -1,0 +1,32 @@
+docker exec -it practice01-mongodb mongosh -u appuser -p appsecret --authenticationDatabase admin practice_db
+
+db.orders.insertMany([
+  {
+    customer: "Иванов Иван",
+    items: [
+      { product: "Книга по Docker", price: 1000, qty: 1 },
+      { product: "Книга по MongoDB", price: 1200, qty: 2 }
+    ],
+    created_at: ISODate("2024-01-10")
+  },
+  {
+    customer: "Петрова Мария",
+    items: [
+      { product: "Книга по PostgreSQL", price: 900, qty: 1 },
+      { product: "Книга по Neo4j", price: 1500, qty: 1 }
+    ],
+    created_at: ISODate("2024-01-11")
+  }
+]);
+
+db.orders.aggregate([
+  { $unwind: "$items" },
+  {
+    $group: {
+      _id: "$customer",
+      total_amount: {
+        $sum: { $multiply: ["$items.price", "$items.qty"] }
+      }
+    }
+  }
+]);

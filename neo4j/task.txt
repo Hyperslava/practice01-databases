@@ -1,0 +1,24 @@
+CREATE (u1:User {name: "Иван"})
+CREATE (u2:User {name: "Мария"})
+CREATE (u3:User {name: "Алексей"})
+CREATE (u4:User {name: "Елена"})
+CREATE (u5:User {name: "Олег"});
+
+MATCH (u1:User {name: "Иван"}), (u2:User {name: "Мария"})
+CREATE (u1)-[:FRIENDS_WITH]->(u2);
+
+MATCH (u1:User {name: "Иван"}), (u3:User {name: "Алексей"})
+CREATE (u1)-[:FRIENDS_WITH]->(u3);
+
+MATCH (u2:User {name: "Мария"}), (u4:User {name: "Елена"})
+CREATE (u2)-[:FRIENDS_WITH]->(u4);
+
+MATCH (u3:User {name: "Алексей"}), (u5:User {name: "Олег"})
+CREATE (u3)-[:FRIENDS_WITH]->(u5);
+
+
+MATCH (me:User {name: "Иван"})-[:FRIENDS_WITH]->(friend)
+MATCH (friend)-[:FRIENDS_WITH]->(fof)
+WHERE fof <> me
+  AND NOT (me)-[:FRIENDS_WITH]->(fof)
+RETURN DISTINCT fof.name AS friend_of_friend;
