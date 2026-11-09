@@ -1,0 +1,22 @@
+FROM maven:3.9.9-eclipse-temurin-11 AS hierarchy-handler-builder
+WORKDIR /build
+COPY mongo-handler/pom.xml ./
+COPY mongo-handler/src ./src
+RUN mvn --batch-mode --no-transfer-progress package
+
+FROM confluentinc/cp-kafka-connect:7.6.1
+
+ARG DEBEZIUM_VERSION=1.9.7.Final
+ARG NEO4J_CONNECTOR_VERSION=5.1.9
+ARG MONGODB_CONNECTOR_VERSION=1.11.2
+RUN mkdir -p /usr/share/confluent-hub-components/debezium-postgres \
+ && curl -fsSL "https://repo.maven.apache.org/maven2/io/debezium/debezium-connector-postgres/${DEBEZIUM_VERSION}/debezium-connector-postgres-${DEBEZIUM_VERSION}-plugin.tar.gz" \
+    | tar -xz -C /usr/share/confluent-hub-components/debezium-postgres \
+ && confluent-hub install --no-prompt "neo4j/kafka-connect-neo4j:${NEO4J_CONNECTOR_VERSION}" \
+ && confluent-hub install --no-prompt "mongodb/kafka-connect-mongodb:${MONGODB_CONNECTOR_VERSION}"
+
+# Пользовательский CdcHandler обязан находиться в той же plugin directory,
+# что и mongo-kafka-connect-all.jar, иначе изоляция classloader Kafka Connect
+# не позволит обработчику увидеть API MongoDB Connector.
+COPY --from=hierarchy-handler-builder /build/target/university-hierarchy-cdc-handler.jar \
+  /usr/share/confluent-hub-components/mongodb-kafka-connect-mongodb/

@@ -1,0 +1,18 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>ru.mirea.lab5</groupId>
+  <artifactId>university-hierarchy-cdc-handler</artifactId>
+  <version>1.0.0</version>
+  <properties><maven.compiler.release>11</maven.compiler.release></properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.mongodb.kafka</groupId><artifactId>mongo-kafka-connect</artifactId>
+      <version>1.11.2</version><scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId><artifactId>mongodb-driver-core</artifactId>
+      <version>4.7.2</version><scope>provided</scope>
+    </dependency>
+  </dependencies>
+  <build><finalName>university-hierarchy-cdc-handler</finalName></build>
+</project>

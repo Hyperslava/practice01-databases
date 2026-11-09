@@ -1,0 +1,4 @@
+2026-11-09 09:33:42,610 INFO LAB3 started: group_id=3e1c4997-ed7e-5fe7-97e9-2edd413bea51 period=2026-02-09..2026-03-22
+2026-11-09 09:33:44,543 INFO Step 1 Neo4j: graduating-department student_course_rows=50
+2026-11-09 09:33:44,588 INFO Step 2 Redis: hydrated_profiles=25
+2026-11-09 09:33:44,655 INFO Step 3 MongoDB: organization loaded for group=3e1c4997-ed7e-5fe7-97e9-2edd413bea51

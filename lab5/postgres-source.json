@@ -1,0 +1,24 @@
+{
+  "name": "lab5-postgres-wal2json",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "host.docker.internal",
+    "database.port": "5433",
+    "database.user": "admin",
+    "database.password": "secret",
+    "database.dbname": "university_system",
+    "database.server.name": "university",
+    "plugin.name": "wal2json",
+    "publication.name": "pub",
+    "publication.autocreate.mode": "disabled",
+    "slot.name": "lab5_wal2json",
+    "snapshot.mode": "initial",
+    "schema.include.list": "public",
+    "tombstones.on.delete": "true",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false"
+  }
+}

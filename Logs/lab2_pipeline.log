@@ -1,0 +1,3 @@
+2026-11-09 09:33:20,009 INFO LAB2 started: course_id=b709955d-7c00-5fe2-85fa-c41f4a375384 semester=3 year=2026
+2026-11-09 09:33:20,077 INFO Step 1 PostgreSQL: technical_sessions=60
+2026-11-09 09:33:20,943 INFO Step 2 Neo4j: capacities=60

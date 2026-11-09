@@ -1,0 +1,16 @@
+{
+  "name": "lab5-mongodb-university-hierarchy",
+  "config": {
+    "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
+    "tasks.max": "1",
+    "connection.uri": "mongodb://appuser:appsecret@host.docker.internal:27017/?authSource=admin",
+    "database": "university_system",
+    "collection": "university_hierarchy_cdc",
+    "topics": "university.public.universities,university.public.institutes,university.public.departments",
+    "change.data.capture.handler": "ru.mirea.lab5.mongo.UniversityHierarchyCdcHandler",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false"
+  }
+}
